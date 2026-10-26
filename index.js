@@ -41,9 +41,20 @@ http.createServer(async function(req, res) {
       const el = $('[id="S:0"]');
       el.hidden = false;
 
-      console.log(el.html());
       el.find('section.comic-navigation').remove();
       el.find('footer').remove();
+
+      el.find('*')
+        .not('img, picture, source, video, audio')
+        .each((_, el) => {
+          el.attribs = {};
+        });
+
+      el.find('img, picture, source, video, audio').each((_, el) => {
+        el.attribs = { src: el.attribs?.src };
+      });
+
+      console.log(el.html());
 
       res.end(el.html())
     })
@@ -62,7 +73,34 @@ http.createServer(async function(req, res) {
     res.write('Homestuck epilogues');
     res.end();
   } else {
-    res.write('Hello World!');
+    res.write(`
+      <header>
+        <h1>Homestuck 4 AI</h1>
+        <p>The Agent-First Homestuck mirror.</p>
+      </header>
+    
+        <main>
+          
+          <h2>Stories:</h2>
+    
+          <nav aria-label="Stories">
+            <ul>
+              <li><a href="/hs/">Homestuck</a></li>
+              <li><a href="/ep/">Homestuck Epilogues</a></li>
+              <li><a href="/bc/">Homestuck Beyond Canon</a></li>
+            </ul>
+          </nav>
+        </main>
+    
+        <footer>
+          <p>
+            Human made, for Agents -
+            &copy; 2026 Homestuck4AI -
+            <a href="https://homestuck.com/">Homestuck</a> is created by Andrew Hussie.
+          </p>
+        </footer>
+    `);
+
     res.end();
   }
 }).listen(3000, function () {
