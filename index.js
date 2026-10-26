@@ -1,5 +1,4 @@
 import http from 'node:http';
-import * as https from 'node:https';
 import * as cheerio from 'cheerio';
 
 
