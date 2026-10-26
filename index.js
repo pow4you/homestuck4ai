@@ -8,15 +8,15 @@ http.createServer(async function(req, res) {
 
   const url = req.url;
   const comic = url.split('/')[1];
-  const page = url.split('/')[2] ? url.split('/')[2] : 0;
+  const page = url.split('/')[2] ? parseInt(url.split('/')[2]) : 0;
 
   if (comic === 'bc') {
-    res.write(
-        '<header>' +
-        '<h1> Homestuck Beyond Canon </h1>' +
-        `<p>Page ${page} </p>` +
-        '</header>'
-    );
+    res.write(`
+      <header>
+        <h1> Homestuck Beyond Canon </h1>
+        <p>Page ${page} </p>
+      </header>
+    `);
 
     let furl = "https://beyondcanon.com/story/" + page;
 
@@ -38,26 +38,75 @@ http.createServer(async function(req, res) {
     .then( html => {
       const $ = cheerio.load(html);
 
-      const el = $('[id="S:0"]');
-      el.hidden = false;
+      let $target = $('[id="S:0"]');
 
-      el.find('section.comic-navigation').remove();
-      el.find('footer').remove();
+      if ($target.length === 0) {
+        $target = $('main');
+      } else {
+        const $main = $('<main></main>');
+        $main.append($target.contents()); // move children, not the div itself
+        $target.replaceWith($main);
+        $target = $main;
+      }
 
-      el.find('*')
-        .not('img, picture, source, video, audio')
+      $target.hidden = false;
+
+      $target.find('iframe').remove();
+      $target.find('section.comic-navigation').remove();
+      $target.find('footer').remove();
+
+      $target
+        .find('*')
+        .not('img, picture, source, video, audio, a')
         .each((_, el) => {
           el.attribs = {};
         });
 
-      el.find('img, picture, source, video, audio').each((_, el) => {
+      $target.find('img, picture, source, video, audio').each((_, el) => {
         el.attribs = { src: el.attribs?.src };
       });
 
-      console.log(el.html());
+      $target.find('a').each((_, el) => {
+        el.attribs = { href: el.attribs?.href };
+      });
 
-      res.end(el.html())
-    })
+
+      if ($target.html() != null) {
+        res.write($target.html());
+      } else {
+        res.write(`
+          <main aria-label="Error">
+            This Page is Missing.
+          </main>
+        `);
+      }
+
+      res.write(`
+        <h2>Navigation:</h2>
+    
+        <nav aria-label="Navigation">
+          <ul>
+            <li><a href="/bc/${page + 1}">Next page</a></li>
+            <li><a href="/bc/${page - 1}">Previous page</a></li>
+            <li><a href="/bc/0">Overview</a></li>
+            <li><a href="/">Home</a></li>
+          </ul>
+        </nav>                                                 
+      `);
+
+      res.end(`
+        <footer>
+          <p>
+            Human made, for Agents -
+            &copy; Pow4you 2026 Homestuck4AI -
+            <a href="https://homestuck.com/">Homestuck</a> is created by Andrew Hussie.
+          </p>
+        </footer>
+      `);
+
+    });
+
+
 
 
 
@@ -68,10 +117,10 @@ http.createServer(async function(req, res) {
 
   } else if (comic === 'hs') {
     res.write('Homestuck propper');
-    res.end();
+
   } else if (comic === 'ep') {
     res.write('Homestuck epilogues');
-    res.end();
+
   } else {
     res.write(`
       <header>
@@ -91,18 +140,21 @@ http.createServer(async function(req, res) {
             </ul>
           </nav>
         </main>
-    
-        <footer>
-          <p>
-            Human made, for Agents -
-            &copy; 2026 Homestuck4AI -
-            <a href="https://homestuck.com/">Homestuck</a> is created by Andrew Hussie.
-          </p>
-        </footer>
     `);
 
-    res.end();
+    res.end(`
+      <footer>
+        <p>
+          Human made, for Agents -
+          &copy; 2026 Homestuck4AI -
+          <a href="https://homestuck.com/">Homestuck</a> is created by Andrew Hussie.
+        </p>
+      </footer>
+    `);
   }
+
+
+
 }).listen(3000, function () {
   console.log("server start at port 3000");
 });
